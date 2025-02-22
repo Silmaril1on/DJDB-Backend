@@ -8,6 +8,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const ratingRoutes = require("./routes/ratingRoutes");
 const userDataRoutes = require("./routes/usersDataRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const PORT = process.env.PORT || 3500;
 
 // Initializes Express App
 const app = express();
@@ -36,11 +37,8 @@ app.use("/api/news", newsRoutes);
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    app.listen(process.env.PORT, () => {
-      console.log(
-        "Connected to MongoDB & app listening on port",
-        process.env.PORT
-      );
+    app.listen(PORT, () => {
+      console.log("Connected to MongoDB & app listening on port", PORT);
     });
   })
   .catch((err) => {
