@@ -1,0 +1,48 @@
+require("dotenv").config();
+const cors = require("cors");
+const express = require("express");
+const mongoose = require("mongoose");
+const userRoute = require("./routes/userRoutes");
+const artistRoutes = require("./routes/artistRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const ratingRoutes = require("./routes/ratingRoutes");
+const userDataRoutes = require("./routes/usersDataRoutes");
+const newsRoutes = require("./routes/newsRoutes");
+
+// Initializes Express App
+const app = express();
+
+// Middleware
+app.use(express.json({ limit: "10mb" }));
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+app.get("/", (req, res) => {
+  res.send("artists api");
+});
+
+// Routes
+app.use("/api/user", userRoute, userDataRoutes);
+app.use("/api/artists", ratingRoutes, artistRoutes, reviewRoutes);
+app.use("/api/news", newsRoutes);
+
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    app.listen(process.env.PORT, () => {
+      console.log(
+        "Connected to MongoDB & app listening on port",
+        process.env.PORT
+      );
+    });
+  })
+  .catch((err) => {
+    console.log(err);
+  });
