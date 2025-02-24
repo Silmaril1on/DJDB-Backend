@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// GET all artists
+// GET all artists w
 const getArtists = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -53,6 +53,31 @@ const getRandomArtists = async (req, res) => {
     res.status(200).json(artists);
   } catch (error) {
     console.error("Error in getRandomArtists:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+//GET BORN TODAY ARTIST
+const getBornTodayArtists = async (req, res) => {
+  try {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    // Create a regex pattern to match the date format "YYYY-MM-DD" where YYYY can be any year
+    const datePattern = `-${month}-${day}`;
+    const artists = await Artist.find({
+      birth: { $regex: datePattern },
+    })
+      .select("name stageName birth image")
+      .sort({ birth: -1 });
+    if (!artists.length) {
+      return res
+        .status(200)
+        .json({ message: "No artists born today", artists: [] });
+    }
+    res.status(200).json(artists);
+  } catch (error) {
+    console.error("Error in getBornTodayArtists:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -140,5 +165,6 @@ module.exports = {
   getRandomArtists,
   getSingleArtist,
   createArtist,
+  getBornTodayArtists,
   getArtists,
 };

@@ -5,18 +5,13 @@ const {
   getRandomArtists,
   getSingleArtist,
   createArtist,
+  getBornTodayArtists,
 } = require("../controllers/artistControllers");
 
-// GET all artists
 router.get("/", getArtists);
-
-// router.get("/", getArtists);
 router.get("/randomartists", getRandomArtists);
-
-// GET SINGLE artist
+router.get("/borntoday", getBornTodayArtists);
 router.get("/:id", getSingleArtist);
-
-// CREATE artist
 router.post("/", createArtist);
 
 module.exports = router;

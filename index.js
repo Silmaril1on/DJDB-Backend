@@ -8,6 +8,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const ratingRoutes = require("./routes/ratingRoutes");
 const userDataRoutes = require("./routes/usersDataRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const festivalRoutes = require("./routes/festivalRoutes");
 const PORT = process.env.PORT || 3500;
 
 // Initializes Express App
@@ -32,6 +33,7 @@ app.get("/", (req, res) => {
 app.use("/api/user", userRoute, userDataRoutes);
 app.use("/api/artists", ratingRoutes, artistRoutes, reviewRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/festivals", festivalRoutes);
 
 // Connect to MongoDB
 mongoose
