@@ -9,6 +9,7 @@ const ratingRoutes = require("./routes/ratingRoutes");
 const userDataRoutes = require("./routes/usersDataRoutes");
 const newsRoutes = require("./routes/newsRoutes");
 const festivalRoutes = require("./routes/festivalRoutes");
+const pendingSubmissionRoutes = require("./routes/pendingSubmissionRoutes");
 const PORT = process.env.PORT || 3500;
 
 // Initializes Express App
@@ -34,6 +35,7 @@ app.use("/api/user", userRoute, userDataRoutes);
 app.use("/api/artists", ratingRoutes, artistRoutes, reviewRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/festivals", festivalRoutes);
+app.use("/api/pending", pendingSubmissionRoutes);
 
 // Connect to MongoDB
 mongoose
