@@ -21,6 +21,7 @@ const getPendingSubmissions = async (req, res) => {
   }
 };
 
+// Create a pending submission
 const createPendingSubmission = async (req, res) => {
   try {
     const { type, data } = req.body;
@@ -56,6 +57,7 @@ const createPendingSubmission = async (req, res) => {
       data: processedData,
       submittedBy,
     });
+
     res.status(201).json(submission);
   } catch (error) {
     console.error("Error in createPendingSubmission:", error);
@@ -72,6 +74,7 @@ const handleSubmission = async (req, res) => {
     if (!submission) {
       return res.status(404).json({ error: "Submission not found" });
     }
+
     if (action === "approve") {
       // Create the appropriate document based on submission type
       if (submission.type === "dj") {
@@ -80,13 +83,26 @@ const handleSubmission = async (req, res) => {
         await Festival.create(submission.data);
       }
       submission.status = "approved";
+      await submission.save();
+      res.status(200).json({
+        message: "Submission approved and added to database successfully",
+        success: true,
+      });
     } else if (action === "decline") {
+      // Update submission status
       submission.status = "declined";
+      await submission.save();
+      res.status(200).json({
+        message: "Submission declined",
+        success: true,
+      });
+    } else {
+      res
+        .status(400)
+        .json({ error: "Invalid action. Use 'approve' or 'decline'." });
     }
-
-    await submission.save();
-    res.status(200).json(submission);
   } catch (error) {
+    console.error("Error handling submission:", error);
     res.status(400).json({ error: error.message });
   }
 };
