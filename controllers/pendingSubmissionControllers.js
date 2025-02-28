@@ -1,7 +1,9 @@
 const PendingSubmission = require("../models/pendingSubmissionModel");
 const Artist = require("../models/artistsModel");
 const Festival = require("../models/festivalModel");
+const User = require("../models/userModel");
 const cloudinary = require("cloudinary").v2;
+const { sendEmail } = require("../utils/emailService");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
@@ -20,6 +22,7 @@ const getPendingSubmissions = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // Create a pending submission
 const createPendingSubmission = async (req, res) => {
   try {
@@ -68,10 +71,21 @@ const handleSubmission = async (req, res) => {
   try {
     const { id } = req.params;
     const { action } = req.body;
-    const submission = await PendingSubmission.findById(id);
+    // Find the submission and populate the submittedBy field to get user details
+    const submission = await PendingSubmission.findById(id).populate(
+      "submittedBy",
+      "username email"
+    );
     if (!submission) {
       return res.status(404).json({ error: "Submission not found" });
     }
+    // Get the user who submitted this
+    const user = await User.findById(submission.submittedBy._id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    // Get the artist/festival name for the email
+    const submissionName = submission.data.stageName || submission.data.name;
     if (action === "approve") {
       // Create the appropriate document based on submission type
       if (submission.type === "dj") {
@@ -79,14 +93,40 @@ const handleSubmission = async (req, res) => {
       } else if (submission.type === "festival") {
         await Festival.create(submission.data);
       }
+      // Update submission status
       submission.status = "approved";
+      await submission.save();
+      // Send approval email
+      await sendEmail(user.email, "approved", {
+        username: user.username,
+        artistName: submissionName,
+      });
+      res.status(200).json({
+        message: "Submission approved and added to database successfully",
+        success: true,
+        emailSent: true,
+      });
     } else if (action === "decline") {
+      // Update submission status
       submission.status = "declined";
+      await submission.save();
+      // Send decline email
+      await sendEmail(user.email, "declined", {
+        username: user.username,
+        artistName: submissionName,
+      });
+      res.status(200).json({
+        message: "Submission declined",
+        success: true,
+        emailSent: true,
+      });
+    } else {
+      res
+        .status(400)
+        .json({ error: "Invalid action. Use 'approve' or 'decline'." });
     }
-
-    await submission.save();
-    res.status(200).json(submission);
   } catch (error) {
+    console.error("Error handling submission:", error);
     res.status(400).json({ error: error.message });
   }
 };
