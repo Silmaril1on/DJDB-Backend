@@ -1,6 +1,9 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
+const logoUrl =
+  "https://res.cloudinary.com/silmarilion/image/upload/v1740848148/DJDB-logo_py4u8c.png";
+
 // Create a transporter
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -18,6 +21,10 @@ const emailTemplates = {
     subject: "Your Artist Submission Has Been Approved!",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src=${logoUrl}
+               alt="DJDB Logo" style="max-width: 100px;"/>
+        </div>
         <h2 style="color: #4affd7; text-align: center;">Good News, ${username}!</h2>
         <p>We're excited to inform you that your submission for <strong>${artistName}</strong> has been approved and added to our database.</p>
         <p>Your contribution helps make our electronic music database more comprehensive and valuable to the community.</p>
@@ -36,6 +43,10 @@ const emailTemplates = {
     subject: "Update on Your Artist Submission",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+       <div style="text-align: center; margin-bottom: 20px;">
+          <img src=${logoUrl}
+               alt="DJDB Logo" style="max-width: 100px;"/>
+        </div>
         <h2 style="color: #ff3d81; text-align: center;">Hello, ${username}</h2>
         <p>We've reviewed your submission for <strong>${artistName}</strong> and unfortunately, we're unable to approve it at this time.</p>
         <p>This could be due to various reasons such as incomplete information, duplicate entries, or not meeting our current database criteria.</p>

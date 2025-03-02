@@ -40,7 +40,6 @@ const onSignUpUser = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 const getUserDetails = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -60,21 +59,47 @@ const updateUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const updates = req.body;
-    // Handle image upload
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
     if (updates.image) {
       const uploadResponse = await cloudinary.uploader.upload(updates.image, {
         folder: "DJDB - User Images",
       });
       updates.image = uploadResponse.secure_url;
+      if (currentUser.image) {
+        try {
+          const urlParts = currentUser.image.split("/");
+          const filenameWithVersion =
+            urlParts[urlParts.length - 2] + "/" + urlParts[urlParts.length - 1];
+          const publicId = filenameWithVersion.split(".")[0];
+          const result = await cloudinary.uploader.destroy(publicId);
+          console.log("Cloudinary delete result:", result);
+
+          if (result.result !== "ok") {
+            const folderName = "DJDB - User Images";
+            const filename = urlParts[urlParts.length - 1].split(".")[0];
+            const alternativePublicId = `${folderName}/${filename}`;
+            console.log("Trying alternative public ID:", alternativePublicId);
+            await cloudinary.uploader.destroy(alternativePublicId);
+          }
+        } catch (deleteError) {
+          console.error("Error deleting old image:", deleteError);
+        }
+      }
     }
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: updates },
       { new: true }
     ).select("-password");
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
     res.status(200).json(user);
   } catch (error) {
     console.error("Error updating user:", error);
