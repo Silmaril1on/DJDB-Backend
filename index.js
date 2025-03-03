@@ -20,13 +20,10 @@ app.use(express.json({ limit: "10mb" }));
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://emdb-nu.vercel.app",
-      "https://electorinc.vercel.app",
-    ],
+    origin: ["http://localhost:3000", "https://djdb.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
