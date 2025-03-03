@@ -20,7 +20,7 @@ const getFestivals = async (req, res) => {
 const getRandomFestivals = async (req, res) => {
   try {
     const festivals = await Festival.aggregate([
-      { $sample: { size: 3 } },
+      { $sample: { size: 4 } },
       {
         $project: {
           name: 1,
