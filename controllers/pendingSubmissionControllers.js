@@ -71,7 +71,6 @@ const handleSubmission = async (req, res) => {
   try {
     const { id } = req.params;
     const { action } = req.body;
-    // Find the submission and populate the submittedBy field to get user details
     const submission = await PendingSubmission.findById(id).populate(
       "submittedBy",
       "username email"
@@ -79,42 +78,33 @@ const handleSubmission = async (req, res) => {
     if (!submission) {
       return res.status(404).json({ error: "Submission not found" });
     }
-    // Get the user who submitted this
     const user = await User.findById(submission.submittedBy._id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    // Get the artist/festival name for the email
     const submissionName = submission.data.stageName || submission.data.name;
     if (action === "approve") {
-      // Create the appropriate document based on submission type
       if (submission.type === "dj") {
         await Artist.create(submission.data);
       } else if (submission.type === "festival") {
         await Festival.create(submission.data);
       }
-      // Update submission status
-      submission.status = "approved";
-      await submission.save();
-      // Send approval email
       await sendEmail(user.email, "approved", {
         username: user.username,
         artistName: submissionName,
       });
+      await PendingSubmission.findByIdAndDelete(id);
       res.status(200).json({
         message: "Submission approved and added to database successfully",
         success: true,
         emailSent: true,
       });
     } else if (action === "decline") {
-      // Update submission status
-      submission.status = "declined";
-      await submission.save();
-      // Send decline email
       await sendEmail(user.email, "declined", {
         username: user.username,
         artistName: submissionName,
       });
+      await PendingSubmission.findByIdAndDelete(id);
       res.status(200).json({
         message: "Submission declined",
         success: true,
