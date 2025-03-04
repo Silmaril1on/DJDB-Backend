@@ -244,7 +244,7 @@ const requestPasswordReset = async (req, res) => {
     // Send email with reset link
     const resetUrl = `${
       process.env.FRONTEND_URL || "https://djdb.vercel.app"
-    }/reset-password/${resetToken}`;
+    }/resetpassword/${resetToken}`;
 
     const emailResult = await sendEmail(user.email, "resetPassword", {
       username: user.username,
