@@ -12,19 +12,24 @@ cloudinary.config({
 const getArtists = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = 10; // Fixed limit to 10
     const skip = (page - 1) * limit;
+
     const artists = await Artist.find({})
       .select("name image _id stageName country flag ratingStats sex")
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
+
     const totalArtists = await Artist.countDocuments();
     const totalPages = Math.ceil(totalArtists / limit);
+
     res.status(200).json({
       artists,
       totalPages,
       currentPage: page,
+      totalArtists,
     });
   } catch (error) {
     console.error("Error in getArtists:", error);
@@ -61,11 +66,26 @@ const getRandomArtists = async (req, res) => {
 const getBornTodayArtists = async (req, res) => {
   try {
     const today = new Date();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const datePattern = `-${month}-${day}`;
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+
     const artists = await Artist.find({
-      birth: { $regex: datePattern },
+      $expr: {
+        $and: [
+          {
+            $eq: [
+              { $month: { $dateFromString: { dateString: "$birth" } } },
+              month,
+            ],
+          },
+          {
+            $eq: [
+              { $dayOfMonth: { $dateFromString: { dateString: "$birth" } } },
+              day,
+            ],
+          },
+        ],
+      },
     })
       .select("name stageName birth image")
       .sort({ birth: -1 });
