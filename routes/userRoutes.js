@@ -9,6 +9,7 @@ const {
   requestPasswordReset,
   verifyResetToken,
   resetPassword,
+  getUserAnalytics,
 } = require("../controllers/userControllers");
 
 router.post("/login", onLoginUser);
@@ -18,5 +19,6 @@ router.put("/update", requireAuth, updateUser);
 router.post("/request-password-reset", requestPasswordReset);
 router.get("/verify-reset-token/:token", verifyResetToken);
 router.post("/reset-password/:token", resetPassword);
+router.get("/analytics", requireAuth, getUserAnalytics);
 
 module.exports = router;

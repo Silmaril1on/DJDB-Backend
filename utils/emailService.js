@@ -111,7 +111,6 @@ const sendEmail = async (to, template, data) => {
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });
-
     console.log(`Email sent: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {

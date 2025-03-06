@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const crypto = require("crypto");
 const { sendEmail } = require("../utils/emailService");
+const PendingSubmission = require("../models/pendingSubmissionModel");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
@@ -12,6 +13,56 @@ cloudinary.config({
 
 const createToken = (_id) => {
   return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "3d" });
+};
+
+// Get User Analytics
+const getUserAnalytics = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalSubmissions = await PendingSubmission.countDocuments();
+    const lastWeekUsers = await User.countDocuments({
+      createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+    });
+    const lastMonthUsers = await User.countDocuments({
+      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+    });
+    const mostActiveUsers = await PendingSubmission.aggregate([
+      {
+        $group: {
+          _id: "$submittedBy",
+          submissionCount: { $sum: 1 },
+        },
+      },
+      { $sort: { submissionCount: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      { $unwind: "$userDetails" },
+      {
+        $project: {
+          _id: 1,
+          username: "$userDetails.username",
+          email: "$userDetails.email",
+          submissionCount: 1,
+        },
+      },
+    ]);
+    res.status(200).json({
+      totalUsers,
+      lastWeekUsers,
+      lastMonthUsers,
+      totalSubmissions,
+      mostActiveUsers,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // LOGIN USER
@@ -91,17 +142,14 @@ const updateUser = async (req, res) => {
         }
       }
     }
-
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: updates },
       { new: true }
     ).select("-password");
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
     res.status(200).json(user);
   } catch (error) {
     console.error("Error updating user:", error);
@@ -113,40 +161,33 @@ const updateUser = async (req, res) => {
 const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
-
     const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(404)
         .json({ error: "User with this email does not exist" });
     }
-
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
-
+    const resetTokenExpiry = Date.now() + 3600000;
     // Save token to user
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
-
     // Send email with reset link
     const resetUrl = `${
       process.env.FRONTEND_URL || "https://djdb.vercel.app"
     }/resetpassword/${resetToken}`;
-
     const emailResult = await sendEmail(user.email, "resetPassword", {
       username: user.username,
       resetUrl,
     });
-
     if (!emailResult.success) {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
       return res.status(500).json({ error: "Error sending email" });
     }
-
     res.status(200).json({ message: "Password reset email sent" });
   } catch (error) {
     console.error("Error requesting password reset:", error);
@@ -158,16 +199,13 @@ const requestPasswordReset = async (req, res) => {
 const verifyResetToken = async (req, res) => {
   try {
     const { token } = req.params;
-
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
     });
-
     if (!user) {
       return res.status(400).json({ error: "Invalid or expired token" });
     }
-
     res.status(200).json({ message: "Token is valid", userId: user._id });
   } catch (error) {
     console.error("Error verifying reset token:", error);
@@ -180,22 +218,17 @@ const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
-
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
     });
-
     if (!user) {
       return res.status(400).json({ error: "Invalid or expired token" });
     }
-
-    // Update password
     user.password = await user.setPassword(password);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
-
     res.status(200).json({ message: "Password has been reset successfully" });
   } catch (error) {
     console.error("Error resetting password:", error);
@@ -211,4 +244,5 @@ module.exports = {
   requestPasswordReset,
   verifyResetToken,
   resetPassword,
+  getUserAnalytics,
 };
